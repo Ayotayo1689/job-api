@@ -26,7 +26,7 @@ app.use(bodyParser.json());
 
 
 const options = {
-  customCssUrl: CSS_URL,
+  // customCssUrl: CSS_URL,
   presets: [
     SwaggerUIBundle
   ],
@@ -47,7 +47,7 @@ const options = {
 };
 
 const specs = swaggerJsdoc(options);
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs, { customCssUrl: CSS_URL }));
 
 
 // const express = require("express");
