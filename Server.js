@@ -26,7 +26,7 @@ app.use(bodyParser.json());
 
 
 const options = {
-  customCssUrl: CSS_URL,
+  // customCssUrl: CSS_URL,
   definition: {
     openapi: "3.0.0",
     info: {
