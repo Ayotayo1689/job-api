@@ -35,7 +35,7 @@ const options = {
     },
     servers: [
       {
-        url: PORT,
+        url: "https://job-api-rosy.vercel.app",
       },
     ],
   },
