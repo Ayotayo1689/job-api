@@ -2,8 +2,8 @@ const express = require("express");
 const app = express();
 require("dotenv").config();
 const cloudinary = require('cloudinary').v2;
-// const CSS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.0/swagger-ui.min.css';
-const { SwaggerUIBundle, SwaggerUIStandalonePreset } = require('swagger-ui-dist');
+const CSS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.0/swagger-ui.min.css';
+// const { SwaggerUIBundle, SwaggerUIStandalonePreset } = require('swagger-ui-dist');
 const admin = require("firebase-admin");
 const credentials = require("./key.json");
 var cors = require('cors');
@@ -26,7 +26,7 @@ app.use(bodyParser.json());
 
 
 const options = {
-  // customCssUrl: CSS_URL,
+  customCssUrl: CSS_URL,
   definition: {
     openapi: "3.0.0",
     info: {
