@@ -48,32 +48,21 @@
 
 
 const express = require("express");
-const app = express();
+
 require("dotenv").config();
 const cloudinary = require('cloudinary').v2;
 const admin = require("firebase-admin");
 const credentials = require("./key.json");
 const cors = require('cors');
 const bodyParser = require("body-parser");
-const swaggerUi = require('swagger-ui-express');
-const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerUI = require('swagger-ui-express');
+const swaggerJsDoc = require('swagger-jsdoc');
 const PORT = process.env.PORT || 8080;
 
 // Initialize Firebase Admin SDK
 admin.initializeApp({
     credential: admin.credential.cert(credentials)
 });
-
-const db = admin.firestore();
-
-// Middleware setup
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cors());
-app.use(bodyParser.json());
-
-// Swagger setup
-const CSS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.0/swagger-ui.min.css';
 
 const options = {
   definition: {
@@ -92,8 +81,23 @@ const options = {
   apis: ["./Server.js"], // files containing annotations for the Swagger docs
 };
 
-const specs = swaggerJsdoc(options);
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs, { customCssUrl: CSS_URL }));
+const db = admin.firestore();
+
+
+const app = express();
+// Middleware setup
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cors());
+app.use(bodyParser.json());
+
+// Swagger setup
+const CSS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.0/swagger-ui.min.css';
+
+
+
+const specs = swaggerJsDoc(options);
+app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(specs));
 
 // Example isAdmin middleware
 const isAdmin = (req, res, next) => {
