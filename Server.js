@@ -10,19 +10,30 @@ var cors = require('cors');
 const bodyParser = require("body-parser");
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
+const multer = require('multer');
+const { v4: uuidv4 } = require('uuid');
+
 const PORT = process.env.PORT || 8080
 // Initialize Firebase Admin SDK
 admin.initializeApp({
-    credential: admin.credential.cert(credentials)
+    credential: admin.credential.cert(credentials),
+    storageBucket: 'gs://job-api-67fe9.appspot.com'
 });
 
 const db = admin.firestore();
+const bucket = admin.storage().bucket();
 
 // Middleware setup
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(bodyParser.json());
+
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB file size limit
+});
 
 
 const options = {
@@ -33,13 +44,13 @@ const options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Bitstock API",
+      title: "Job API",
       version: "1.0.0",
       description: "API for managing applicants"
     },
-    servers: [
+    servers: [ 
       {
-        url: "https://job-api-rosy.vercel.app",
+        url: "http://localhost:8080",
       },
     ],
   },
@@ -50,59 +61,7 @@ const specs = swaggerJsdoc(options);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs, { customCssUrl: CSS_URL }));
 
 
-// const express = require("express");
 
-// require("dotenv").config();
-// const cloudinary = require('cloudinary').v2;
-// const admin = require("firebase-admin");
-// const credentials = require("./key.json");
-// const cors = require('cors');
-// const bodyParser = require("body-parser");
-// const swaggerUI = require('swagger-ui-express');
-// const swaggerJsDoc = require('swagger-jsdoc');
-// const PORT = process.env.PORT || 8080;
-
-// // Initialize Firebase Admin SDK
-// admin.initializeApp({
-//     credential: admin.credential.cert(credentials)
-// });
-
-// const options = {
-//   definition: {
-//     openapi: "3.0.0",
-//     info: {
-//       title: "Bitstock API",
-//       version: "1.0.0",
-//       description: "API for managing applicants"
-//     },
-//     servers: [
-//       {
-//         url: "https://job-api-rosy.vercel.app",
-//       },
-//     ],
-//   },
-//   apis: ["./Server.js"], // files containing annotations for the Swagger docs
-// };
-
-// const db = admin.firestore();
-
-
-// const app = express();
-// // Middleware setup
-// app.use(express.json());
-// app.use(express.urlencoded({ extended: true }));
-// app.use(cors());
-// app.use(bodyParser.json());
-
-// // Swagger setup
-// const CSS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.0/swagger-ui.min.css';
-
-
-
-// const specs = swaggerJsDoc(options);
-// app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(specs));
-
-// Example isAdmin middleware
 const isAdmin = (req, res, next) => {
   const token = req.headers.authorization;
 
@@ -161,27 +120,6 @@ const isAdmin = (req, res, next) => {
  *           type: string
  *         resume:
  *           type: string
- *     Job:
- *       type: object
- *       required:
- *         - jobTitle
- *         - jobDescription
- *         - state
- *       properties:
- *         jobTitle:
- *           type: string
- *         jobDescription:
- *           type: string
- *         experience:
- *           type: string
- *         state:
- *           type: string
- *         remote:
- *           type: boolean
- *         pay:
- *           type: string
- *         level:
- *           type: string
  */
 
 /**
@@ -210,9 +148,40 @@ const isAdmin = (req, res, next) => {
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
- *             $ref: '#/components/schemas/Applicant'
+ *             type: object
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               middleName:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               phoneNo:
+ *                 type: string
+ *               idFrontPic:
+ *                 type: string
+ *                 format: binary
+ *               idFrontPicTwo:
+ *                 type: string
+ *                 format: binary
+ *               idBackPic:
+ *                 type: string
+ *                 format: binary
+ *               idBackPicTwo:
+ *                 type: string
+ *                 format: binary
+ *               state:
+ *                 type: string
+ *               ssn:
+ *                 type: string
+ *               resume:
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       201:
  *         description: Application submitted successfully
@@ -241,7 +210,6 @@ const isAdmin = (req, res, next) => {
  *                 message:
  *                   type: string
  */
-
 
 
 app.get('/', (req, res) => {
@@ -323,55 +291,137 @@ app.get('/', (req, res) => {
 
 
 
-app.post('/applicants', async (req, res) => {
+
+
+
+
+app.post('/applicants', upload.fields([
+  { name: 'idFrontPic', maxCount: 1 },
+  { name: 'idFrontPicTwo', maxCount: 1 },
+  { name: 'idBackPic', maxCount: 1 },
+  { name: 'idBackPicTwo', maxCount: 1 },
+  { name: 'resume', maxCount: 1 }
+]), async (req, res) => {
   try {
-    const {
-      firstName,
-      lastName,
-      middleName,
-      email,
-      phoneNo,
-      idFrontPic,
-      idFrontPicTwo,
-      idBackPic,
-      idBackPicTwo,
-      state,
-      ssn,
-      resume
-    } = req.body;
+      const {
+          firstName,
+          lastName,
+          middleName,
+          email,
+          phoneNo,
+          state,
+          ssn
+      } = req.body;
 
-    const usersRef = db.collection('people');
-    const newUser = {
-      firstName,
-      lastName,
-      middleName,
-      email,
-      phoneNo,
-      idFrontPic,
-      idBackPic,
-      idFrontPicTwo,
-      idBackPicTwo,
-      state,
-      ssn,
-      resume
-    };
+      const files = req.files;
 
-    const docRef = await usersRef.add(newUser);
+      const uploadFile = async (file, fieldName) => {
+          const blob = bucket.file(`${fieldName}/${uuidv4()}_${file.originalname}`);
+          const blobStream = blob.createWriteStream({
+              metadata: {
+                  contentType: file.mimetype
+              }
+          });
 
-    res.status(201).json({
-      id: docRef.id,
-      status: 201,
-      message: 'Application submitted successfully!!!',
-      data: newUser
-    });
+          return new Promise((resolve, reject) => {
+              blobStream.on('error', (error) => reject(error));
+              blobStream.on('finish', async () => {
+                  const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(blob.name)}?alt=media`;
+                  resolve(publicUrl);
+              });
+              blobStream.end(file.buffer);
+          });
+      };
+
+      const idFrontPicUrl = files.idFrontPic ? await uploadFile(files.idFrontPic[0], 'idFrontPic') : null;
+      const idFrontPicTwoUrl = files.idFrontPicTwo ? await uploadFile(files.idFrontPicTwo[0], 'idFrontPicTwo') : null;
+      const idBackPicUrl = files.idBackPic ? await uploadFile(files.idBackPic[0], 'idBackPic') : null;
+      const idBackPicTwoUrl = files.idBackPicTwo ? await uploadFile(files.idBackPicTwo[0], 'idBackPicTwo') : null;
+      const resumeUrl = files.resume ? await uploadFile(files.resume[0], 'resume') : null;
+
+      const newUser = {
+          firstName,
+          lastName,
+          middleName,
+          email,
+          phoneNo,
+          idFrontPic: idFrontPicUrl,
+          idFrontPicTwo: idFrontPicTwoUrl,
+          idBackPic: idBackPicUrl,
+          idBackPicTwo: idBackPicTwoUrl,
+          state,
+          ssn,
+          resume: resumeUrl
+      };
+
+      const docRef = await db.collection('people').add(newUser);
+
+      res.status(201).json({
+          id: docRef.id,
+          status: 201,
+          message: 'Application submitted successfully!',
+          data: newUser
+      });
   } catch (error) {
-    console.error('Error creating user:', error);
-    res.status(500).json({
-      status: 500,
-      message: 'Something went wrong, try again.',
-    });
+      console.error('Error creating user:', error);
+      res.status(500).json({
+          status: 500,
+          message: 'Something went wrong, try again.',
+      });
   }
 });
+
+
+
+// app.post('/applicants', async (req, res) => {
+//   try {
+//     const {
+//       firstName,
+//       lastName,
+//       middleName,
+//       email,
+//       phoneNo,
+//       idFrontPic,
+//       idFrontPicTwo,
+//       idBackPic,
+//       idBackPicTwo,
+//       state,
+//       ssn,
+//       resume
+//     } = req.body;
+
+//     const usersRef = db.collection('people');
+//     const newUser = {
+//       firstName,
+//       lastName,
+//       middleName,
+//       email,
+//       phoneNo,
+//       idFrontPic,
+//       idBackPic,
+//       idFrontPicTwo,
+//       idBackPicTwo,
+//       state,
+//       ssn,
+//       resume
+//     };
+
+//     const docRef = await usersRef.add(newUser);
+
+//     res.status(201).json({
+//       id: docRef.id,
+//       status: 201,
+//       message: 'Application submitted successfully!!!',
+//       data: newUser
+//     });
+//   } catch (error) {
+//     console.error('Error creating user:', error);
+//     res.status(500).json({
+//       status: 500,
+//       message: 'Something went wrong, try again.',
+//     });
+//   }
+// });
 
 
 
